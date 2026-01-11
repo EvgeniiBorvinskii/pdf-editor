@@ -28,6 +28,8 @@ private slots:
     void saveFile();
     void saveFileAs();
     void onToolChanged(int toolId);
+    void toggleTheme();
+    void updateContentScale();
 
 private:
     void setupUI();
@@ -42,6 +44,8 @@ private:
     
     QString m_currentFile;
     QGraphicsBlurEffect *m_blurEffect;
+    bool m_isDarkTheme;
+    qreal m_contentScale;
 };
 
 #endif // MAINWINDOW_H

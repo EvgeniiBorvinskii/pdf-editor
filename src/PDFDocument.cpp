@@ -1,6 +1,7 @@
 #include "PDFDocument.h"
 #include <QPainter>
 #include <QFile>
+#include <QFileInfo>
 #include <QDebug>
 
 // Private implementation to abstract PDF library details
@@ -61,15 +62,40 @@ PDFDocument::~PDFDocument() = default;
 bool PDFDocument::load(const QString &filePath) {
     d->filePath = filePath;
     
-    // In a real implementation, this would use PDFium or similar library
-    // For now, create a placeholder implementation
-    
     if (!QFile::exists(filePath)) {
+        qDebug() << "File does not exist:" << filePath;
         return false;
     }
     
-    // Simulate loading - in real app, use PDFium
-    d->pageCount = 1; // Placeholder
+    // Check if it's a PDF file
+    if (!filePath.toLower().endsWith(".pdf")) {
+        qDebug() << "Not a PDF file:" << filePath;
+        return false;
+    }
+    
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Cannot open file:" << filePath;
+        return false;
+    }
+    
+    // Read PDF header to verify it's a valid PDF
+    QByteArray header = file.read(5);
+    file.close();
+    
+    if (!header.startsWith("%PDF-")) {
+        qDebug() << "Invalid PDF header:" << header;
+        return false;
+    }
+    
+    // In a real implementation, this would use PDFium or similar library
+    // For now, create multiple placeholder pages based on file size
+    QFileInfo fileInfo(filePath);
+    qint64 fileSize = fileInfo.size();
+    
+    // Estimate number of pages (rough estimate: 50KB per page average)
+    d->pageCount = qMax(1, static_cast<int>(fileSize / 51200));
+    d->pageCount = qMin(d->pageCount, 100); // Limit to 100 pages for demo
     d->valid = true;
     
     // Create empty page cache
@@ -78,7 +104,10 @@ bool PDFDocument::load(const QString &filePath) {
         d->pageCache.append(QImage());
     }
     
-    qDebug() << "PDF loaded:" << filePath;
+    qDebug() << "PDF loaded successfully:" << filePath;
+    qDebug() << "Estimated pages:" << d->pageCount;
+    qDebug() << "File size:" << fileSize << "bytes";
+    
     return true;
 }
 
@@ -115,14 +144,59 @@ QImage PDFDocument::renderPage(int pageIndex, qreal scale) {
     QPainter painter(&page);
     painter.setRenderHint(QPainter::Antialiasing);
     
-    // Draw placeholder content
-    painter.setPen(QColor(200, 200, 200));
+    // Draw white background
+    painter.fillRect(page.rect(), Qt::white);
+    
+    // Draw border
+    painter.setPen(QPen(QColor(200, 200, 200), 2 * scale));
     painter.drawRect(0, 0, width - 1, height - 1);
     
+    // Draw placeholder content - simulate PDF page
     painter.setPen(Qt::black);
-    painter.setFont(QFont("Arial", 24 * scale));
-    painter.drawText(page.rect(), Qt::AlignCenter, 
-                     "PDF Viewer\nPage " + QString::number(pageIndex + 1));
+    painter.setFont(QFont("Arial", static_cast<int>(14 * scale)));
+    
+    // Title
+    QRect titleRect(static_cast<int>(50 * scale), static_cast<int>(100 * scale), 
+                    static_cast<int>((width - 100) / scale), static_cast<int>(40 * scale));
+    painter.drawText(titleRect, Qt::AlignCenter, 
+                     "PDF Document - Page " + QString::number(pageIndex + 1));
+    
+    // Simulate text content
+    painter.setFont(QFont("Arial", static_cast<int>(10 * scale)));
+    int yPos = static_cast<int>(200 * scale);
+    int lineHeight = static_cast<int>(20 * scale);
+    int leftMargin = static_cast<int>(50 * scale);
+    int rightMargin = width - static_cast<int>(50 * scale);
+    
+    QStringList sampleText = {
+        "This is a placeholder for PDF content. In a production version,",
+        "this would display the actual PDF page rendered using a library",
+        "like PDFium, MuPDF, or Poppler.",
+        "",
+        "The PDF Editor supports:",
+        "• Text annotations and editing",
+        "• Highlighting important sections",
+        "• Drawing and freehand sketches",
+        "• Adding shapes and arrows",
+        "• Inserting images",
+        "• Adding comments and notes",
+        "",
+        "Use the tools on the left sidebar to edit the document.",
+        "File menu provides open/save functionality.",
+        "View menu allows zoom and theme switching.",
+    };
+    
+    for (const QString &line : sampleText) {
+        if (yPos > height - static_cast<int>(100 * scale)) break;
+        painter.drawText(leftMargin, yPos, line);
+        yPos += lineHeight;
+    }
+    
+    // Draw page number at bottom
+    painter.setFont(QFont("Arial", static_cast<int>(8 * scale)));
+    painter.drawText(page.rect().adjusted(0, 0, 0, static_cast<int>(-20 * scale)), 
+                     Qt::AlignCenter | Qt::AlignBottom,
+                     QString("Page %1 of %2").arg(pageIndex + 1).arg(d->pageCount));
     
     // Render all edits
     for (const auto &drawing : d->drawings) {
