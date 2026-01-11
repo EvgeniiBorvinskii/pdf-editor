@@ -49,6 +49,8 @@ private:
     int m_currentPage;
     qreal m_zoom;
     QMatrix4x4 m_transform;
+    qreal m_scrollOffset;
+    qreal m_pageSpacing;
     
     QPoint m_lastMousePos;
     bool m_isPanning;

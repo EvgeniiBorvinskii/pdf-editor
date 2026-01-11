@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsBlurEffect>
 #include <QPropertyAnimation>
+#include <QUndoStack>
 #include <memory>
 
 class CustomTitleBar;
@@ -41,6 +42,7 @@ private:
     PDFViewer *m_pdfViewer;
     EditToolbar *m_editToolbar;
     std::unique_ptr<AnimationEngine> m_animationEngine;
+    QUndoStack *m_undoStack;
     
     QString m_currentFile;
     QGraphicsBlurEffect *m_blurEffect;

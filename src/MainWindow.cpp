@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_titleBar(nullptr)
     , m_pdfViewer(nullptr)
     , m_editToolbar(nullptr)
+    , m_undoStack(new QUndoStack(this))
     , m_blurEffect(nullptr)
     , m_isDarkTheme(true)
     , m_contentScale(1.0)
@@ -71,8 +72,9 @@ void MainWindow::setupUI() {
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(0);
     
-    // Edit toolbar
+    // Edit toolbar (hidden until PDF is loaded)
     m_editToolbar = new EditToolbar(this);
+    m_editToolbar->setVisible(false);
     connect(m_editToolbar, &EditToolbar::toolChanged, this, &MainWindow::onToolChanged);
     contentLayout->addWidget(m_editToolbar);
     
@@ -180,17 +182,11 @@ void MainWindow::createMenuBar() {
     
     QAction *undoAction = editMenu->addAction("↶ Undo");
     undoAction->setShortcut(QKeySequence::Undo);
-    connect(undoAction, &QAction::triggered, [this]() {
-        if (m_pdfViewer && m_pdfViewer->document()) {
-            QMessageBox::information(this, "Undo", "Undo functionality - Coming soon!");
-        }
-    });
+    connect(undoAction, &QAction::triggered, m_undoStack, &QUndoStack::undo);
     
     QAction *redoAction = editMenu->addAction("↷ Redo");
     redoAction->setShortcut(QKeySequence::Redo);
-    connect(redoAction, &QAction::triggered, [this]() {
-        QMessageBox::information(this, "Redo", "Redo functionality - Coming soon!");
-    });
+    connect(redoAction, &QAction::triggered, m_undoStack, &QUndoStack::redo);
     
     editMenu->addSeparator();
     
@@ -320,6 +316,11 @@ void MainWindow::openFile() {
         if (m_pdfViewer->loadDocument(fileName)) {
             m_currentFile = fileName;
             m_titleBar->setTitle("PDF Editor - " + QFileInfo(fileName).fileName());
+            
+            // Show edit toolbar when PDF is loaded
+            if (m_editToolbar) {
+                m_editToolbar->setVisible(true);
+            }
         } else {
             QMessageBox::critical(this, "Error", "Failed to load PDF file.");
         }

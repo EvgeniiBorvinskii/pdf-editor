@@ -10,6 +10,8 @@ PDFViewer::PDFViewer(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_currentPage(0)
     , m_zoom(1.0)
+    , m_scrollOffset(0.0)
+    , m_pageSpacing(20.0)
     , m_isPanning(false)
     , m_needsUpdate(false)
 {
@@ -37,6 +39,7 @@ bool PDFViewer::loadDocument(const QString &filePath) {
         m_editor = std::make_unique<PDFEditor>(m_document.get(), this);
         m_currentPage = 0;
         m_zoom = 1.0;
+        m_scrollOffset = 0.0;
         m_needsUpdate = true;
         
         emit documentLoaded();
@@ -100,32 +103,46 @@ void PDFViewer::paintGL() {
 }
 
 void PDFViewer::renderPage() {
-    if (!m_document || m_currentPage >= m_document->pageCount()) {
+    if (!m_document) {
         return;
     }
     
-    // Render PDF page with hardware acceleration
-    QImage pageImage = m_document->renderPage(m_currentPage, m_zoom * devicePixelRatio());
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
     
-    if (!pageImage.isNull()) {
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    // Render all pages vertically
+    int pageCount = m_document->pageCount();
+    qreal yPos = -m_scrollOffset;
+    
+    for (int i = 0; i < pageCount; ++i) {
+        QImage pageImage = m_document->renderPage(i, m_zoom * devicePixelRatio());
         
-        // Calculate centered position
-        int x = (width() - pageImage.width() / devicePixelRatio()) / 2;
-        int y = (height() - pageImage.height() / devicePixelRatio()) / 2;
-        
-        // Draw shadow
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor(0, 0, 0, 50));
-        painter.drawRoundedRect(x + 5, y + 5, 
-                                pageImage.width() / devicePixelRatio(),
-                                pageImage.height() / devicePixelRatio(), 
-                                8, 8);
-        
-        // Draw page
-        painter.drawImage(x, y, pageImage);
+        if (!pageImage.isNull()) {
+            qreal pageWidth = pageImage.width() / devicePixelRatio();
+            qreal pageHeight = pageImage.height() / devicePixelRatio();
+            
+            // Calculate centered position
+            int x = (width() - pageWidth) / 2;
+            
+            // Only render if visible
+            if (yPos + pageHeight > 0 && yPos < height()) {
+                // Draw shadow
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(QColor(0, 0, 0, 50));
+                painter.drawRoundedRect(x + 5, yPos + 5, pageWidth, pageHeight, 8, 8);
+                
+                // Draw page
+                painter.drawImage(x, yPos, pageImage);
+                
+                // Draw page number
+                painter.setPen(QColor(150, 150, 150));
+                painter.setFont(QFont("Arial", 10));
+                painter.drawText(x, yPos - 5, QString("Page %1").arg(i + 1));
+            }
+            
+            yPos += pageHeight + m_pageSpacing;
+        }
     }
 }
 
@@ -140,17 +157,30 @@ void PDFViewer::wheelEvent(QWheelEvent *event) {
         qreal delta = event->angleDelta().y() / 1200.0;
         setZoom(m_zoom + delta);
     } else {
-        // Scroll pages
-        if (event->angleDelta().y() > 0 && m_currentPage > 0) {
-            m_currentPage--;
-            m_needsUpdate = true;
-            emit pageChanged(m_currentPage);
-        } else if (event->angleDelta().y() < 0 && 
-                   m_document && m_currentPage < m_document->pageCount() - 1) {
-            m_currentPage++;
-            m_needsUpdate = true;
-            emit pageChanged(m_currentPage);
+        // Vertical scroll through pages
+        qreal scrollDelta = event->angleDelta().y();
+        m_scrollOffset -= scrollDelta * 0.5;
+        
+        // Clamp scroll to valid range
+        if (m_scrollOffset < 0) {
+            m_scrollOffset = 0;
         }
+        
+        if (m_document) {
+            // Calculate total height
+            qreal totalHeight = 0;
+            for (int i = 0; i < m_document->pageCount(); ++i) {
+                QImage pageImage = m_document->renderPage(i, m_zoom * devicePixelRatio());
+                totalHeight += (pageImage.height() / devicePixelRatio()) + m_pageSpacing;
+            }
+            
+            qreal maxScroll = qMax(0.0, totalHeight - height());
+            if (m_scrollOffset > maxScroll) {
+                m_scrollOffset = maxScroll;
+            }
+        }
+        
+        m_needsUpdate = true;
     }
     
     event->accept();
