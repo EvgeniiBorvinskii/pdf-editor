@@ -27,6 +27,13 @@ public:
     void addHighlight(int page, const QRectF &rect, const QColor &color);
     void addText(int page, const QPointF &pos, const QString &text, const QFont &font);
     void addImage(int page, const QPointF &pos, const QImage &image);
+    
+    // Undo operations
+    void removeLastDrawing();
+    void removeLastHighlight();
+    void removeLastAnnotation();
+    void removeLastText();
+    void removeLastImage();
 
 private:
     class Private;

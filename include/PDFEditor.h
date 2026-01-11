@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QPointF>
 #include <QColor>
+#include <QUndoStack>
 #include <memory>
 
 class PDFDocument;
@@ -29,6 +30,8 @@ public:
 
     void setEditMode(EditMode mode);
     EditMode editMode() const;
+    
+    void setUndoStack(QUndoStack *stack);
     
     void setColor(const QColor &color);
     void setPenWidth(qreal width);

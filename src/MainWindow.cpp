@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "CustomTitleBar.h"
 #include "PDFViewer.h"
+#include "PDFEditor.h"
 #include "EditToolbar.h"
 #include "AnimationEngine.h"
 #include <QVBoxLayout>
@@ -320,6 +321,13 @@ void MainWindow::openFile() {
             // Show edit toolbar when PDF is loaded
             if (m_editToolbar) {
                 m_editToolbar->setVisible(true);
+            }
+            
+            // Connect PDFEditor to QUndoStack
+            if (m_pdfViewer->editor()) {
+                m_pdfViewer->editor()->setUndoStack(m_undoStack);
+                connect(m_pdfViewer->editor(), &PDFEditor::editApplied, 
+                        m_pdfViewer, QOverload<>::of(&QWidget::update), Qt::UniqueConnection);
             }
         } else {
             QMessageBox::critical(this, "Error", "Failed to load PDF file.");

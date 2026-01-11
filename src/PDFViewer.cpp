@@ -59,6 +59,10 @@ PDFDocument* PDFViewer::document() const {
     return m_document.get();
 }
 
+PDFEditor* PDFViewer::editor() const {
+    return m_editor.get();
+}
+
 void PDFViewer::setZoom(qreal zoom) {
     m_zoom = qBound(0.1, zoom, 5.0);
     updateTransform();
@@ -167,13 +171,7 @@ void PDFViewer::wheelEvent(QWheelEvent *event) {
         }
         
         if (m_document) {
-            // Calculate total height
-            qreal totalHeight = 0;
-            for (int i = 0; i < m_document->pageCount(); ++i) {
-                QImage pageImage = m_document->renderPage(i, m_zoom * devicePixelRatio());
-                totalHeight += (pageImage.height() / devicePixelRatio()) + m_pageSpacing;
-            }
-            
+            qreal totalHeight = calculateTotalHeight();
             qreal maxScroll = qMax(0.0, totalHeight - height());
             if (m_scrollOffset > maxScroll) {
                 m_scrollOffset = maxScroll;
@@ -184,6 +182,17 @@ void PDFViewer::wheelEvent(QWheelEvent *event) {
     }
     
     event->accept();
+}
+
+qreal PDFViewer::calculateTotalHeight() {
+    if (!m_document) return 0;
+    
+    qreal totalHeight = 0;
+    for (int i = 0; i < m_document->pageCount(); ++i) {
+        QSizeF pageSize = m_document->pageSize(i);
+        totalHeight += (pageSize.height() * m_zoom) + m_pageSpacing;
+    }
+    return totalHeight;
 }
 
 void PDFViewer::mousePressEvent(QMouseEvent *event) {

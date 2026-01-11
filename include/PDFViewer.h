@@ -19,6 +19,7 @@ public:
     bool loadDocument(const QString &filePath);
     void saveDocument(const QString &filePath);
     PDFDocument* document() const;
+    PDFEditor* editor() const;
     
     void setZoom(qreal zoom);
     qreal zoom() const;
@@ -42,6 +43,7 @@ protected:
 private:
     void renderPage();
     void updateTransform();
+    qreal calculateTotalHeight();
     
     std::unique_ptr<PDFDocument> m_document;
     std::unique_ptr<PDFEditor> m_editor;

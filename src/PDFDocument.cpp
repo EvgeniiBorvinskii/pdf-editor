@@ -294,3 +294,33 @@ void PDFDocument::addImage(int page, const QPointF &pos, const QImage &image) {
     imgObj.image = image;
     d->images.append(imgObj);
 }
+
+void PDFDocument::removeLastDrawing() {
+    if (!d->drawings.isEmpty()) {
+        d->drawings.removeLast();
+    }
+}
+
+void PDFDocument::removeLastHighlight() {
+    if (!d->highlights.isEmpty()) {
+        d->highlights.removeLast();
+    }
+}
+
+void PDFDocument::removeLastAnnotation() {
+    if (!d->annotations.isEmpty()) {
+        d->annotations.removeLast();
+    }
+}
+
+void PDFDocument::removeLastText() {
+    if (!d->texts.isEmpty()) {
+        d->texts.removeLast();
+    }
+}
+
+void PDFDocument::removeLastImage() {
+    if (!d->images.isEmpty()) {
+        d->images.removeLast();
+    }
+}

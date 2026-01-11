@@ -31,6 +31,8 @@ private slots:
     void onToolChanged(int toolId);
     void toggleTheme();
     void updateContentScale();
+    
+    QUndoStack* undoStack() const { return m_undoStack; }
 
 private:
     void setupUI();
