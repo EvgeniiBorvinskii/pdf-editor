@@ -36,6 +36,8 @@ set(SOURCES
     src/DrawingTool.cpp
     src/AnnotationTool.cpp
     src/ImageTool.cpp
+    src/PDFTextExtractor.cpp
+    src/TextEditDialog.cpp
 )
 
 set(HEADERS
@@ -48,6 +50,11 @@ set(HEADERS
     include/PDFEditor.h
     include/TextTool.h
     include/HighlightTool.h
+    include/DrawingTool.h
+    include/AnnotationTool.h
+    include/ImageTool.h
+    include/PDFTextExtractor.h
+    include/TextEditDialog.h
     include/DrawingTool.h
     include/AnnotationTool.h
     include/ImageTool.h

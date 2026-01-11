@@ -8,6 +8,7 @@
 
 class PDFDocument;
 class PDFEditor;
+class PDFTextExtractor;
 
 class PDFViewer : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
@@ -39,14 +40,17 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
     void renderPage();
     void updateTransform();
     qreal calculateTotalHeight();
+    void editTextAt(const QPoint& pos);
     
     std::unique_ptr<PDFDocument> m_document;
     std::unique_ptr<PDFEditor> m_editor;
+    std::unique_ptr<PDFTextExtractor> m_textExtractor;
     
     int m_currentPage;
     qreal m_zoom;

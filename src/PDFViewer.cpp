@@ -1,6 +1,8 @@
 #include "PDFViewer.h"
 #include "PDFDocument.h"
 #include "PDFEditor.h"
+#include "PDFTextExtractor.h"
+#include "TextEditDialog.h"
 #include <QPainter>
 #include <QWheelEvent>
 #include <QTimer>
@@ -37,6 +39,7 @@ bool PDFViewer::loadDocument(const QString &filePath) {
     
     if (m_document->load(filePath)) {
         m_editor = std::make_unique<PDFEditor>(m_document.get(), this);
+        m_textExtractor = std::make_unique<PDFTextExtractor>(m_document.get());
         m_currentPage = 0;
         m_zoom = 1.0;
         m_scrollOffset = 0.0;
@@ -231,4 +234,61 @@ void PDFViewer::mouseReleaseEvent(QMouseEvent *event) {
     }
     
     event->accept();
+}
+
+void PDFViewer::mouseDoubleClickEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        editTextAt(event->pos());
+    }
+    event->accept();
+}
+
+void PDFViewer::editTextAt(const QPoint& pos) {
+    if (!m_document || !m_textExtractor) return;
+    
+    // Convert widget coordinates to document coordinates
+    // Account for zoom and scroll offset
+    QPointF docPos = pos;
+    docPos /= m_zoom;
+    
+    // Find which page was clicked
+    int pageIndex = -1;
+    qreal yOffset = 0;
+    
+    for (int i = 0; i < m_document->pageCount(); ++i) {
+        QSizeF pageSize = m_document->pageSize(i);
+        qreal pageHeight = pageSize.height();
+        
+        if (docPos.y() >= yOffset && docPos.y() <= yOffset + pageHeight) {
+            pageIndex = i;
+            docPos.setY(docPos.y() - yOffset);
+            break;
+        }
+        
+        yOffset += pageHeight + 10; // Add spacing between pages
+    }
+    
+    if (pageIndex < 0) return;
+    
+    // Find text block at this position
+    TextBlock block = m_textExtractor->findBlockAt(pageIndex, docPos);
+    
+    if (block.text.isEmpty()) return;
+    
+    // Show edit dialog
+    TextEditDialog dialog(block.text, block.fontFamily, block.fontSize, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        QString newText = dialog.getText();
+        QString newFontFamily = dialog.getFontFamily();
+        int newFontSize = dialog.getFontSize();
+        
+        // TODO: Actually modify the PDF content here
+        // For now, we'll just trigger a re-render
+        qDebug() << "Text edited:" << newText;
+        qDebug() << "Font:" << newFontFamily << "Size:" << newFontSize;
+        
+        m_needsUpdate = true;
+        update();
+    }
 }
