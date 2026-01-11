@@ -1,6 +1,7 @@
 #include "PDFEditor.h"
 #include "PDFDocument.h"
 #include <QStack>
+#include <QVariant>
 
 class PDFEditor::Private {
 public:
